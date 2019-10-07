@@ -7,7 +7,7 @@ import tempfile
 default_logger = logging.getLogger(__name__)
 
 
-def process(artifact_path, metadata, content_objs, logger=None):
+def process(artifact_file, metadata, content_objs, logger=None):
     """Entry point for plugin, where group=post_load_plugin.
 
     This plugin called after galaxy_importer loads collection.
@@ -18,7 +18,7 @@ def process(artifact_path, metadata, content_objs, logger=None):
     _check_module_doc_string(content_objs)
 
     _run_ansible_test(
-        artifact_path=artifact_path,
+        artifact_file=artifact_file,
         namespace=metadata.namespace,
         name=metadata.name,
         logger=logger,
@@ -30,7 +30,7 @@ def _check_module_doc_string(content_objs):
     # TODO(awcrosby): Implement
 
 
-def _run_ansible_test(artifact_path, namespace, name, logger):
+def _run_ansible_test(artifact_file, namespace, name, logger):
     """Runs ansible-test in local environment and logs output.
 
     --requirements option installs additional packages into environment.
@@ -60,7 +60,8 @@ def _run_ansible_test(artifact_path, namespace, name, logger):
         logger.debug(
             f'os.path.exists(extract_dir)={os.path.exists(extract_dir)}')
 
-        with tarfile.open(artifact_path, 'r') as pkg_tar:
+        artifact_file.seek(0)
+        with tarfile.open(fileobj=artifact_file, mode='r') as pkg_tar:
             pkg_tar.extractall(extract_dir)
 
             proc = subprocess.Popen(
