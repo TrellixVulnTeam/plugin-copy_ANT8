@@ -38,34 +38,25 @@ def _run_ansible_test(artifact_file, namespace, name, logger):
     logger.info('')
     logger.info('=== Running ansible-test sanity ===')
 
-    ansible_root_bin = os.path.join(
-        os.getenv('VIRTUAL_ENV'), 'src', 'ansible', 'bin')
     cmd = [
         'ansible-test sanity',
         '--requirements',
         '--python 3.7',
         '--failure-ok',
     ]
-    absolute_cmd = os.path.join(ansible_root_bin, ' '.join(cmd))
-
-    logger.debug(f'ansible_root_bin={ansible_root_bin}')
-    logger.debug(f'absolute_cmd={absolute_cmd}')
+    logger.debug(f'cmd={" ".join(cmd)}')
 
     with tempfile.TemporaryDirectory() as temp_root:
         suffix = f'ansible_collections/{namespace}/{name}/'
         extract_dir = os.path.join(temp_root, suffix)
         os.makedirs(extract_dir)
 
-        logger.debug(f'extract_dir={extract_dir}')
-        logger.debug(
-            f'os.path.exists(extract_dir)={os.path.exists(extract_dir)}')
-
         artifact_file.seek(0)
         with tarfile.open(fileobj=artifact_file, mode='r') as pkg_tar:
             pkg_tar.extractall(extract_dir)
 
             proc = subprocess.Popen(
-                absolute_cmd,
+                ' '.join(cmd),
                 cwd=extract_dir,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
