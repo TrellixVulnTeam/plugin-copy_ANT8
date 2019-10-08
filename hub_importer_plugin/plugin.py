@@ -40,8 +40,9 @@ def _run_ansible_test(artifact_file, namespace, name, logger):
 
     cmd = [
         'ansible-test sanity',
-        '--requirements',
-        '--python 3.7',
+        '--local',
+        '--python 3.6',
+        '--color yes',
         '--failure-ok',
     ]
     logger.debug(f'cmd={" ".join(cmd)}')
