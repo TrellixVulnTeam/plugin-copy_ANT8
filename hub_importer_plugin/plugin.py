@@ -7,7 +7,7 @@ import tempfile
 default_logger = logging.getLogger(__name__)
 
 
-def process(artifact_path, metadata, content_objs, logger=None):
+def process(artifact_file, metadata, content_objs, logger=None):
     """Entry point for plugin, where group=post_load_plugin.
 
     This plugin called after galaxy_importer loads collection.
@@ -18,7 +18,7 @@ def process(artifact_path, metadata, content_objs, logger=None):
     _check_module_doc_string(content_objs)
 
     _run_ansible_test(
-        artifact_path=artifact_path,
+        artifact_file=artifact_file,
         namespace=metadata.namespace,
         name=metadata.name,
         logger=logger,
@@ -30,7 +30,7 @@ def _check_module_doc_string(content_objs):
     # TODO(awcrosby): Implement
 
 
-def _run_ansible_test(artifact_path, namespace, name, logger):
+def _run_ansible_test(artifact_file, namespace, name, logger):
     """Runs ansible-test in local environment and logs output.
 
     --requirements option installs additional packages into environment.
@@ -38,33 +38,26 @@ def _run_ansible_test(artifact_path, namespace, name, logger):
     logger.info('')
     logger.info('=== Running ansible-test sanity ===')
 
-    ansible_root_bin = os.path.join(
-        os.getenv('VIRTUAL_ENV'), 'src', 'ansible', 'bin')
     cmd = [
         'ansible-test sanity',
-        '--requirements',
-        '--python 3.7',
+        '--local',
+        '--python 3.6',
+        '--color yes',
         '--failure-ok',
     ]
-    absolute_cmd = os.path.join(ansible_root_bin, ' '.join(cmd))
-
-    logger.debug(f'ansible_root_bin={ansible_root_bin}')
-    logger.debug(f'absolute_cmd={absolute_cmd}')
+    logger.debug(f'cmd={" ".join(cmd)}')
 
     with tempfile.TemporaryDirectory() as temp_root:
         suffix = f'ansible_collections/{namespace}/{name}/'
         extract_dir = os.path.join(temp_root, suffix)
         os.makedirs(extract_dir)
 
-        logger.debug(f'extract_dir={extract_dir}')
-        logger.debug(
-            f'os.path.exists(extract_dir)={os.path.exists(extract_dir)}')
-
-        with tarfile.open(artifact_path, 'r') as pkg_tar:
+        artifact_file.seek(0)
+        with tarfile.open(fileobj=artifact_file, mode='r') as pkg_tar:
             pkg_tar.extractall(extract_dir)
 
             proc = subprocess.Popen(
-                absolute_cmd,
+                ' '.join(cmd),
                 cwd=extract_dir,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
